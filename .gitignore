@@ -1,0 +1,35 @@
+# These are some examples of commonly ignored file patterns.
+# You should customize this list as applicable to your project.
+# Learn more about .gitignore:
+#     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
+
+# Node artifact files
+node_modules
+node_modules/
+dist
+
+database/library
+workers/library
+services/pubsub/library
+cron/library
+tests/library
+sites/admin/api/library
+sites/admin/web/library-web
+sites/admin/api/node_modules
+sites/admin/web/node_modules
+
+
+local/data
+
+.DS_Store
+**/.DS_Store
+.export 
+.backup
+.backup_priority
+.sync_from
+.sync_to
+.restore
+.restore_priority
+.cleanup
+.orphans
+backup.sql

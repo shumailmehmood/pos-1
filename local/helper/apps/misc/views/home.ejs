@@ -1,0 +1,243 @@
+<html>
+
+<head>
+    <title>Helper</title>
+    <meta http-equiv="refresh" content="300">
+    <meta name="google" content="notranslate" />
+    <link href="https://cdn.jsdelivr.net/npm/bulma/css/bulma.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+
+<body>
+    <section class="hero is-small is-primary">
+        <div class="hero-body">
+            <p class="title">
+                Comply
+            </p>
+            <p class="subtitle">
+                Development Helper
+            </p>
+        </div>
+    </section>
+    <div class="container" style="margin-top: 20px;">
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="database_health" class="tag"></span> &nbsp;Database
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://database.complydev.com" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="pgweb_health" class="tag"></span> &nbsp;PgWeb
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://pgweb.complydev.com" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="helper_health" class="tag"></span> &nbsp;Helper
+                        </div>
+                        <div class="column has-text-centered">
+                            <%= ip %>:9070
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/helper" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="admin-web_health" class="tag"></span> &nbsp;Admin Web
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/admin" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="admin-api_health" class="tag"></span> &nbsp;Admin API
+                        </div>
+                        <div class="column has-text-centered">
+                            <%= ip %>:9092
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/admin/api" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="app-web_health" class="tag"></span> &nbsp;App Web
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/app" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="app-api_health" class="tag"></span> &nbsp;App API
+                        </div>
+                        <div class="column has-text-centered">
+                            <%= ip %>:9094
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/app/api" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="market-web_health" class="tag"></span> &nbsp;Market Web
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/market" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="market-api_health" class="tag"></span> &nbsp;Market API
+                        </div>
+                        <div class="column has-text-centered">
+                            <%= ip %>:9096
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/market/api" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="columns is-vcentered">
+                        <div class="column">
+                            <span id="pubsub_health" class="tag"></span> &nbsp;PubSub
+                        </div>
+                        <div class="column has-text-centered">
+                            <%= ip %>:9099
+                        </div>
+                        <div class="column has-text-right">
+                            <a href="https://complydev.com/pubsub" class="button" target="_blank">Open</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            function check(url, div) {
+                $.ajax({
+                    url: url,
+                    dataType: "script",
+                    statusCode: {
+                        200: function () {
+                            clear(div);
+                            $(`#${div}_health`).html("200");
+                            $(`#${div}_health`).addClass("is-success");
+                        },
+                        426: function () {
+                            clear(div);
+                            $(`#${div}_health`).html("426");
+                            $(`#${div}_health`).addClass("is-success");
+                        },
+                        304: function () {
+                            clear(div);
+                            $(`#${div}_health`).html("304");
+                            $(`#${div}_health`).addClass("is-success");
+                        },
+                        502: function () {
+                            clear(div);
+                            $(`#${div}_health`).html("502");
+                            $(`#${div}_health`).addClass("is-danger");
+                        },
+                        503: function () {
+                            clear(div);
+                            $(`#${div}_health`).html("503");
+                            $(`#${div}_health`).addClass("is-danger");
+                        },
+                    },
+                }).done(function (data, statusText, xhr) {
+                    // var status = xhr.status;
+                    // console.log(status);
+                }).fail(function (xhr) {
+                    $(`#${div}_health`).html("failed");
+                    $(`#${div}_health`).addClass("is-danger");
+                });
+            }
+
+            function clear(div) {
+                $(`#${div}_health`).removeClass("is-success");
+                $(`#${div}_health`).removeClass("is-danger");
+            }
+
+            function checkAll() {
+                check(`https://complydev.com/helper`, "helper");
+                check(`https://database.complydev.com`, "database");
+                check(`https://pgweb.complydev.com/`, "pgweb");
+                check(`https://complydev.com/admin/`, "admin-web");
+                check(`https://complydev.com/admin/api/lb`, "admin-api");
+                check(`https://complydev.com/market/`, "market-web");
+                check(`https://complydev.com/market/api/lb`, "market-api");
+                check(`https://complydev.com/app/`, "app-web");
+                check(`https://complydev.com/app/api/lb`, "app-api");
+                check(`https://complydev.com/pubsub/lb`, "pubsub");
+            }
+
+            $(function () {
+                checkAll();
+                setInterval(function () {
+                    try {
+                        checkAll();
+                    } catch (err) {
+                        console.log(err);
+                    }
+                }, 10 * 1000);
+            });
+        </script>
+</body>
+<html>
+
+</html>
+
+</html>

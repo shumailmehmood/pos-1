@@ -1,0 +1,20 @@
+<%- include('header.ejs') %>
+<style>
+.fail{
+    color: red;
+}
+.pass{
+    color: green;
+}
+</style>
+<h1>Health Check</h1>
+<% if(failed){ %>
+<p class="fail">Failed!</p>
+<% } else { %>
+<p class="pass">All Passed</p>
+<% } %>
+<% for(var i=0; i<results.length; i++) { %>
+<p class="<%= results[i].result ? 'pass' : 'fail' %>"><%= results[i].name %></p>
+<% } %>
+process uptime: <%= uptime %> seconds
+<%- include('footer.ejs') %>

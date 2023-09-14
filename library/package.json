@@ -1,0 +1,29 @@
+{
+  "name": "library",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.379.1",
+    "@google-cloud/text-to-speech": "^4.2.3",
+    "aws-sdk": "^2.1426.0",
+    "axios": "^1.4.0",
+    "bcryptjs": "^2.4.3",
+    "bluebird": "^3.7.2",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "nodemailer": "^6.9.4",
+    "pg": "^8.11.1",
+    "shelljs": "^0.8.5",
+    "stripe": "^12.16.0",
+    "twilio": "^4.14.1",
+    "validate.js": "^0.13.1",
+    "yesql": "^7.0.0"
+  }
+}

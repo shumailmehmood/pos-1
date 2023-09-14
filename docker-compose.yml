@@ -1,0 +1,148 @@
+version: '3'
+networks:
+    main:
+services:
+    nginx:
+        image: nginx:latest
+        volumes:
+            - ./local/nginx:/etc/nginx/conf.d
+        ports:
+            - '80:80'
+            - '443:443'
+        depends_on:
+            - cockroachdb
+        networks:
+            main:
+                aliases:
+                    - nginx
+    cockroachdb:
+        image: cockroachdb/cockroach:v23.1.5
+        ports:
+            - '26257:26257'
+            - '8081:8081'
+        volumes:
+            - ./local/data:/cockroach/cockroach-data
+        command: start-single-node --insecure --http-addr=0.0.0.0:8081 --host=0.0.0.0 --port=26257
+        networks:
+            main:
+                aliases:
+                    - cockroachdb
+        restart: always
+    pgweb:
+        image: sosedoff/pgweb:latest
+        ports:
+            - '8082:8082'
+        depends_on:
+            - cockroachdb
+        entrypoint: '/usr/bin/pgweb --bind=0.0.0.0 --listen=8082 --url postgres://root@cockroachdb:26257/comply?sslmode=disable'
+        networks:
+            main:
+                aliases:
+                    - pgweb
+        restart: always
+    db:
+        image: ghafran/comply:latest
+        volumes:
+            - ./database:/srv:cached
+            - ./local/assets:/assets:cached
+        depends_on:
+            - cockroachdb
+        command: sh /srv/local.sh setup
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - db
+    helper:
+        image: ghafran/comply:latest
+        ports:
+            - '7070:7070'
+            - '9070:9070'
+        volumes:
+            - ./local/helper:/srv:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - helper
+    pubsub:
+        image: ghafran/comply:latest
+        ports:
+            - '8099:8099'
+            - '9099:9099'
+        depends_on:
+            - cockroachdb
+        volumes:
+            - ./services/pubsub:/srv:cached
+            - ./local/assets:/assets:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - pubsub-api-service
+    admin-api:
+        image: ghafran/comply:latest
+        ports:
+            - '8092:8092'
+            - '9092:9092'
+        depends_on:
+            - cockroachdb
+        volumes:
+            - ./sites/admin/api:/srv:cached
+            - ./local/assets:/assets:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - admin-api-service
+    app-api:
+        image: ghafran/comply:latest
+        ports:
+            - '8094:8094'
+            - '9094:9094'
+        depends_on:
+            - cockroachdb
+        volumes:
+            - ./sites/app/api:/srv:cached
+            - ./local/assets:/assets:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - app-api-service
+    market-api:
+        image: ghafran/comply:latest
+        ports:
+            - '8096:8096'
+            - '9096:9096'
+        depends_on:
+            - cockroachdb
+        volumes:
+            - ./sites/market/api:/srv:cached
+            - ./local/assets:/assets:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - market-api-service
+    cron:
+        image: ghafran/comply:latest
+        ports:
+            - '8097:8097'
+            - '9097:9097'
+        depends_on:
+            - cockroachdb
+        volumes:
+            - ./cron:/srv:cached
+            - ./local/assets:/assets:cached
+        command: sh /srv/local.sh
+        platform: linux/amd64
+        networks:
+            main:
+                aliases:
+                    - cron-service

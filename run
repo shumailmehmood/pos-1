@@ -1,0 +1,358 @@
+#!/bin/bash
+export DOCKER_CLIENT_TIMEOUT=120
+export COMPOSE_HTTP_TIMEOUT=120
+
+DNS=(
+database
+pgweb
+)
+
+setupDNS () {
+    removeDNS
+    echo "adding DNS to host file...";
+    # ip=$(minikube ip);
+    ip="127.0.0.1";
+    echo "$ip complydev.com" | sudo tee -a /etc/hosts > /dev/null;
+    for D in "${DNS[@]}"; do
+        echo "$ip $D.complydev.com" | sudo tee -a /etc/hosts > /dev/null;
+    done
+
+}
+
+removeDNS () {
+    echo "removing DNS from host file...";
+    sudo sed -i .bak '/complydev.com/d' /etc/hosts
+}
+
+ncu() {
+    sudo npm install -g npm-check-updates
+    for d in ./* ./sites/*/*; do
+        echo $d
+        if [ -d "$d" ]; then
+            if [[ "$d" != *"/node_modules"* ]]; then
+               if [ -f "$d/package.json" ]; then
+                echo "updating $d/package.json ..."
+                npm-check-updates --packageFile="$d/package.json" -u
+               fi
+            fi
+        fi
+    done
+}
+
+waitfor(){
+    dev_status=0
+    while [ ! $dev_status -eq 200 ]; do
+        echo "waiting for $1"
+        sleep 10;
+        dev_status=$(curl -sL -w "%{http_code}\\n" "$1" -o /dev/null --connect-timeout 3 --max-time 5)
+    done
+}
+
+compose () {
+    echo "composing...";
+    docker pull ghafran/comply:latest
+    docker-compose -f docker-compose.yml build
+    docker-compose -f docker-compose.yml up -d 
+    docker-compose -f docker-compose.yml ps
+    docker-compose -f docker-compose.yml rm -f
+}
+
+decompose () {
+    echo "decomposing...";
+    docker-compose -f docker-compose.yml down --remove-orphans
+    docker-compose -f docker-compose.yml rm -f
+}
+
+cmd () {
+    docker exec -it $(docker-compose -f docker-compose.yml ps -q $1) sh -c "$2"
+}
+
+ssh () {
+    cmd $1 "cd /srv;/bin/sh"
+}
+
+check-commits(){
+    if [[ $(git status -s) ]]; then
+        echo "$(tput setaf 1)commit your changes first: $REPO"
+        exit
+    fi
+}
+
+checkBranch(){
+    if [[ -z "${BRANCH}" ]]; then
+        echo "BRANCH ENV missing. use: export BRANCH=YOUR_BRANCH"
+        exit
+    fi
+}
+
+
+if [ "$1" == "setup" ]; then
+    docker pull ghafran/comply:latest
+    compose
+    # setupDNS
+    open -a "Google Chrome" https://complydev.com/helper
+elif [ "$1" == "destroy" ]; then
+    decompose
+    # removeDNS
+elif [ "$1" == "dns" ]; then
+    setupDNS
+elif [ "$1" == "helper" ]; then
+    open -a "Google Chrome" https://complydev.com/helper
+elif [ "$1" == "admin" ]; then
+    pushd ~/git/comply/sites/admin/web
+        yarn install
+        yarn dev
+    popd
+elif [ "$1" == "app" ]; then
+    pushd ~/git/comply/sites/app/web
+        yarn install
+        yarn dev
+    popd
+elif [ "$1" == "market" ]; then
+    pushd ~/git/comply/sites/market/web
+        yarn install
+        yarn dev
+    popd
+elif [ "$1" == "ssh" ]; then
+    ssh $2
+elif [ "$1" == "database" ]; then
+    if [ "$2" == "update" ]; then
+        cmd db "cd /srv;sh local.sh update;"
+    elif [ "$2" == "refresh" ]; then
+        cmd db "cd /srv;sh local.sh refresh;"
+    elif [ "$2" == "schedule" ]; then
+        cmd db "cd /srv;node schedule.js $3"
+    elif [ "$2" == "orm" ]; then
+        cmd db "cd /srv;node orm.js"
+        cp ./database/tables.js ./library/orm/tables.js
+        echo "done. run library to update all repos with latest"
+    elif [ "$2" == "all" ]; then
+        ./run database update
+        ./run database orm
+        ./run library
+    elif [ "$2" == "backup" ]; then
+        cmd db "cd /srv;node backup.js"
+    elif [ "$2" == "restore" ]; then
+        cmd db "cd /srv;node restore.js"
+    elif [ "$2" == "backup-priority" ]; then
+        cmd db "cd /srv;node backup_priority.js"
+    elif [ "$2" == "restore-priority" ]; then
+        cmd db "cd /srv;node restore_priority.js"
+    elif [ "$2" == "cleanup" ]; then
+        cmd db "cd /srv;node cleanup.js"
+    elif [ "$2" == "orphans" ]; then
+        cmd db "cd /srv;node orphans.js"
+    elif [ "$2" == "sync-from" ]; then
+        kubectl delete job database-sync-from
+        kubectl apply -f database/sync_from.yml
+        kubectl wait --for=condition=Available job/database-sync-from
+        ./run database-logs database-sync-from
+    elif [ "$2" == "sync-to" ]; then
+        kubectl delete job database-sync-to
+        kubectl apply -f database/sync_to.yml
+        kubectl wait --for=condition=Available job/database-sync-to
+        ./run database-logs database-sync-to
+    elif [ "$2" == "loadtest" ]; then
+        kubectl delete job database-loadtest
+        kubectl apply -f database/loadtest.yml
+        kubectl wait --for=condition=Available job/database-loadtest 
+        ./run database-logs database-loadtest
+    elif [ "$2" == "logs" ]; then
+        POD=$(kubectl get pod -l job-name=$3 -o jsonpath="{.items[0].metadata.name}")
+        kubectl logs -f $POD
+    else
+        cmd cockroachdb "cockroach sql --insecure --database=comply"
+    fi
+elif [ "$1" == "cron" ]; then
+    cmd cron "cd /srv;node $2.js"
+elif [ "$1" == "cron-logs" ]; then
+    docker-compose logs --tail=0 --follow cron
+elif [ "$1" == "logs" ]; then
+    docker-compose logs --tail=0 --follow $2
+elif [ "$1" == "restart" ]; then
+    if [ -z "$2" ]
+    then
+        docker-compose -f docker-compose.yml restart
+    else
+        docker-compose -f docker-compose.yml restart $2
+    fi
+elif [ "$1" == "ncu" ]; then
+    ncu
+elif [ "$1" == "watch" ]; then
+    watch -n 2 kubectl get pods
+elif [ "$1" == "clean" ]; then
+    pushd ~/git/comply
+        find . -type f -name 'yarn.lock' -delete
+        find . -type f -name 'package-lock.json' -delete
+        find . -type f -name 'yarn-error.log' -delete
+        find . -type d -name 'node_modules' -exec rm -rf {} \;
+    popd
+elif [ "$1" == "push" ]; then
+    if [[ -z "$2" ]] 
+    then
+        echo "$(tput setaf 1)enter comment"
+        exit
+    fi
+    pushd ~/git/comply > /dev/null
+        if [[ -n $(git status -s) ]] 
+        then
+            git add -A
+            git commit -am "$2"
+            git push
+        fi
+    popd > /dev/null
+elif [ "$1" == "pull" ]; then
+    pushd ~/git/comply > /dev/null
+        git pull
+        ./run library
+        ./run library-web
+    popd > /dev/null
+elif [ "$1" == "build" ]; then
+    if [ -z "$2" ]
+    then
+        sites=( admin app market )
+        for site in "${sites[@]}"
+        do
+            pushd ~/git/comply/sites/$site/web > /dev/null
+                yarn install
+                yarn build
+            popd > /dev/null
+        done
+    else
+        pushd ~/git/comply/sites/$2/web > /dev/null
+            yarn install
+            yarn build
+        popd > /dev/null
+    fi
+elif [ "$1" == "build-image" ]; then
+    chmod +x ./local/docker/build.sh
+    ./local/docker/build.sh
+elif [ "$1" == "library" ]; then
+    pushd ~/git/comply/library > /dev/null
+        yarn install
+    popd > /dev/null
+    rsync -avq --exclude="node_modules" ./library/ ./database/library
+    rsync -avq --exclude="node_modules" ./library/ ./sites/admin/api/library
+    rsync -avq --exclude="node_modules" ./library/ ./sites/app/api/library
+    rsync -avq --exclude="node_modules" ./library/ ./sites/market/api/library
+    rsync -avq --exclude="node_modules" ./library/ ./workers/library
+    rsync -avq --exclude="node_modules" ./library/ ./services/pubsub/library
+    rsync -avq --exclude="node_modules" ./library/ ./cron/library
+    rsync -avq --exclude="node_modules" ./library/ ./tests/library
+elif [ "$1" == "library-web" ]; then
+    rsync -avq --exclude="node_modules" ./library-web/ ./sites/admin/web/library-web
+    rsync -avq --exclude="node_modules" ./library-web/ ./sites/app/web/library-web
+    rsync -aqv --exclude="node_modules" ./library-web/ ./sites/market/web/library-web
+elif [ "$1" == "lint" ]; then
+    pushd ~/git/comply/tests > /dev/null
+        if [ -z "$2" ]
+        then
+            gulp lint
+        else
+            gulp "$2-lint"
+        fi
+    popd > /dev/null
+elif [ "$1" == "unit" ]; then
+    ./run library
+    pushd ~/git/comply/tests > /dev/null
+        if [ -z "$2" ]
+        then
+            gulp unit
+        else
+            gulp "$2-unit"
+        fi
+    popd > /dev/null
+elif [ "$1" == "integration" ]; then
+    pushd ~/git/comply/tests > /dev/null
+        if [ -z "$2" ]
+        then
+            gulp integration
+        else
+            gulp "$2-integration"
+        fi
+    popd > /dev/null
+elif [ "$1" == "functional" ]; then
+    pushd ~/git/comply/tests > /dev/null
+        if [ -z "$2" ]
+        then
+            gulp functional
+        else
+            gulp "$2-functional"
+        fi
+    popd > /dev/null
+elif [ "$1" == "create-branch" ]; then
+    checkBranch
+    check-commits
+    git checkout main
+    git pull origin main
+    git checkout -B $BRANCH
+    git pull origin $BRANCH
+    git push origin $BRANCH
+    git push --set-upstream origin $BRANCH
+    ./run library
+    ./run library-web
+elif [ "$1" == "checkout" ]; then
+    checkBranch
+    check-commits
+    git pull
+    git checkout $BRANCH
+    git pull origin $BRANCH
+    ./run library
+    ./run library-web
+elif [ "$1" == "push" ]; then
+    checkBranch
+    if [[ -z "$2" ]] 
+    then
+        echo "$(tput setaf 1)enter comment"
+        exit
+    fi
+    git add -A
+    git commit -am "$2"
+    git push origin $BRANCH
+elif [ "$1" == "pull" ]; then
+    checkBranch
+    git pull origin "$(git branch --show-current)"
+    ./run library
+    ./run library-web
+elif [ "$1" == "undo" ]; then
+    git checkout -f
+    ./run library
+    ./run library-web
+elif [ "$1" == "update-from-main" ]; then
+    checkBranch
+    check-commits
+    git checkout main
+    git pull origin main
+    git checkout $BRANCH
+    git merge main --no-edit
+    ./run library
+    ./run library-web
+elif [ "$1" == "merge-to-main" ]; then
+    checkBranch
+    check-commits
+    git checkout main
+    git pull origin main
+    git merge $BRANCH --no-edit
+    git push origin main
+    ./run checkout
+    ./run library
+    ./run library-web
+elif [ "$1" == "delete-branch" ]; then
+    check-commits
+    git checkout $2
+    git checkout $BRANCH
+    git branch -d $2
+    git push origin :$2
+elif [ "$1" == "merge-to-deploy" ]; then
+    check-commits
+    export B=$(git branch --show-current)
+    git checkout main
+    git pull origin main
+    git checkout $2
+    git pull origin $2
+    git merge main --no-edit
+    git push origin $2
+    git checkout $B
+else
+    echo "$(tput setaf 1)invalid run command"
+fi

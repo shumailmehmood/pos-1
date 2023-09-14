@@ -1,0 +1,179 @@
+# Build a Docker image with CI/CD and push to the GitLab registry.
+# Docker-in-Docker documentation: https://docs.gitlab.com/ee/ci/docker/using_docker_build.html
+
+variables:
+    SECURE_LOG_LEVEL: debug
+    ANSIBLE_CONFIG: ansible.cfg
+    ANSIBLE_HOST_KEY_CHECKING: 'False' # disable host key checking for ansible
+
+image: $CI_REGISTRY_IMAGE/ansible:latest
+
+stages:
+    - build
+    - test
+    - lint
+    - build_infra
+    - build_app
+    - qa
+    - deploy
+
+include:
+    - template: Dependency-Scanning.gitlab-ci.yml
+    - template: Security/Container-Scanning.gitlab-ci.yml
+    - template: Security/Secret-Detection.gitlab-ci.yml
+    - template: Security/SAST.gitlab-ci.yml
+
+docker-build:
+    parallel:
+        matrix:
+            - DIRECTORY: sites/${SERVICE}/${SUFFIX}
+              APP: ${SERVICE}-${SUFFIX}
+              SERVICE:
+                  - admin
+                  - app
+              SUFFIX:
+                  - api
+                  - web
+            - DIRECTORY: services/pubsub
+              APP: pubsub
+            - DIRECTORY: cron
+              APP: cron
+            - DIRECTORY: database
+              APP: database
+    image: docker:latest
+    stage: build
+    services:
+        - docker:dind
+    script:
+        - cp -R library ${DIRECTORY}/library
+        - cp -R library-web ${DIRECTORY}/library-web
+        - VERSION=$(cat VERSION)
+        - cd ${DIRECTORY}
+        - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+        - echo "Version is ${VERSION}"
+        - docker build --pull -t "${CI_REGISTRY_IMAGE}/${APP}:latest" -t "${CI_REGISTRY_IMAGE}/${APP}:${VERSION}" .
+        - docker push --all-tags "${CI_REGISTRY_IMAGE}/${APP}"
+    rules:
+        # Run this job only on default branch
+        # Run only when VERSION file changes
+        - if: $CI_COMMIT_BRANCH =~ $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"
+          changes:
+              - VERSION
+
+container_scanning:
+    parallel:
+        matrix:
+            - DIRECTORY: sites/$SERVICE/$SUFFIX
+              APP: $SERVICE-$SUFFIX
+              SERVICE:
+                  - admin
+                  - app
+              SUFFIX:
+                  - api
+                  - web
+            - DIRECTORY: services/pubsub
+              APP: pubsub
+            - DIRECTORY: cron
+              APP: cron
+            - DIRECTORY: database
+              APP: database
+    variables:
+        GIT_STRATEGY: fetch
+        CS_IMAGE: $CI_REGISTRY_IMAGE/$APP:latest
+        CS_DOCKERFILE_PATH: $DIRECTORY/Dockerfile
+
+docker-build-ansible:
+    image: docker:latest
+    stage: build
+    services:
+        - docker:dind
+    script:
+        - cd deployments
+        - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+        - docker build --pull -t "${CI_REGISTRY_IMAGE}/ansible:latest" .
+        - docker push --all-tags "${CI_REGISTRY_IMAGE}/ansible"
+    rules:
+        # Run this job only on default branch and if Dockerfile is changed
+        - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "merge_request_event"'
+          changes:
+              - deployments/Dockerfile
+
+ansible-lint:
+    stage: lint
+    script:
+        - cd deployments
+        - aws --version
+        - ansible --version
+        - ansible-lint --version
+        - ansible-playbook --vault-password-file $ansible_vault --syntax-check infra/*.yml -i "configs/$CI_COMMIT_BRANCH"
+        - ansible-playbook --vault-password-file $ansible_vault --syntax-check k8s/*.yml -i "configs/$CI_COMMIT_BRANCH"
+        - ansible-playbook --vault-password-file $ansible_vault --syntax-check tests/*.yml -i "configs/$CI_COMMIT_BRANCH"
+        - ansible-lint
+    rules:
+        - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+          changes:
+              - deployments/**/*
+
+build_infra:
+    stage: build_infra
+    script:
+        - cd deployments
+        - ansible-playbook --vault-password-file $ansible_vault infra/aws.yml -i "configs/$CI_COMMIT_BRANCH"
+    artifacts:
+        paths:
+            - deployments/configs/*.kubeconfig
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+
+build_app:
+    stage: build_app
+    script:
+        - cd deployments
+        - ansible-playbook --vault-password-file $ansible_vault k8s/deploy_app.yml -i "configs/$CI_COMMIT_BRANCH"
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+
+monitoring:
+    stage: qa
+    script:
+        - cd deployments
+        - ansible-playbook --vault-password-file $ansible_vault infra/monitoring.yml -i "configs/$CI_COMMIT_BRANCH"
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+
+smoketest:
+    stage: qa
+    script:
+        - cd deployments
+        - ansible-playbook tests/smoketest.yml -i "configs/$CI_COMMIT_BRANCH" --tags "check_test"
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+
+switch_app:
+    stage: deploy
+    script:
+        - cd deployments
+        - ansible-playbook --vault-password-file $ansible_vault k8s/app_switch.yml -i "configs/$CI_COMMIT_BRANCH"
+    when: manual
+    needs:
+        - build_infra
+        - smoketest
+    dependencies:
+        - build_infra
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+
+delete_old_cluster:
+    stage: deploy
+    script:
+        - cd deployments
+        - ansible-playbook --vault-password-file $ansible_vault delete_old_cluster.yml -i "configs/$CI_COMMIT_BRANCH"
+    when: manual
+    rules:
+        - if: $CI_COMMIT_BRANCH =~ /^dev$/ && $CI_PIPELINE_SOURCE != "merge_request_event"
+        - if: $CI_COMMIT_BRANCH =~ /^prod$/ && $CI_PIPELINE_SOURCE != "merge_request_event"

@@ -1,0 +1,12 @@
+{
+    "type": "service_account",
+    "project_id": "vitalchat-306902",
+    "private_key_id": "2413247a6c048cc736b034c22b5282e94b18b644",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDAiqng6mw/53Vp\nWNUxhHXqSUfkjdbeMwtAbbFzmvTCHKwETwxXfA64WxWsRfJEfWA8FdD8HYLtlWMq\nE305aU/VD2HKYUNwVhBhAJGi4Ql+SGaKij/maagi5aCJk9EwxQGF9DH9BtdBVvFM\nL2t5X33+/4CsMcO7dgb+UJDxMHMLGvVXLnhUZETP8HUbbD3KpQpCUvDDBPK7iwCj\nPwPrx41M3d219XnGgLSn93p9m+ScUBMJMpvGGYCFb+T5JggjrV49HXTJkFJDvlUy\njkNxVcO4Q365Z4khlvZSV3MgbFwd4NLN4r8mjjs1EoxkUK8AWgoc+Pol/6JB9Zk1\nk8hDTeaXAgMBAAECggEAOH3WtveA2EUUZVrbfmJTaHCkx9G368zFLduhV35s9rEL\n5V2+DMMI3J1Y4AlLuj2g6TArd3U/L28Hv9YlBR25fxU6x3K/IywVNSjCEix9qRAc\nCeTjN7rjSo3eCs+Ubn824bMSoZ8KtBCKzqQRH/TdFl6nxZ36RDuudJp11FY3Qtfc\nCDINwt+Ku5FZMRnza6xul167Iz8IcesjLKVUHtLUwpE6Sch0O+mkbl1qawYynvJi\nyLn67wjElmZ0a20sNpvu/mIJRAHxSfqT92LIrku+pLXZst/sKyOnVvjUBSED+iCn\nwKf5OXqUmQGIhHVmH1FYTeEBvykPsTG3ROTHkS4TEQKBgQD+l8ceLHyKIeOiVhAd\nsfnIGAg9v1ZF5XMyVG8SkylNyIiDeJGwJpgikVkinY3M0V8bmru7oorK/2RVZOw5\nPR4J7WKOLJhElrE/EYWfZHzD24Hd51RatrH1eg2PDmXdUiLQjDZzFhBFEQWytY7E\n7YkNN4SUQRjJHwC3/skKYUE4RwKBgQDBmxb99dr+TgFBzNVilSqIXReTNxjZK8+y\nxz16A7z2Ht07lBkNOCu4QGlwIiKqyTQp6I2NloEPoKv3FI3ZJ6yynSlSVSqFbr7R\nEnBRwgh03NKw1XYsfjAy2VaSepAklMnn9UUlKa1gctMpjQWh+/o0f1lIg/mP9+o+\nIMOWEb5XMQKBgCprz9nPP9EkZHGgNX89MImOt5DSWOW8nb09JGTL8I3tZBHD/UKE\nq8TWwytpZT9Dg71twuo44zd/5o/0CQhgjqjIzSszcwu6sD36BXHRpJhd8v2ulfen\niW+FrsyvcXm3PeXR9yCmBH/9nh1w8yENE1EIdybc0exxJgWChq0cF2nxAoGAQZpK\n1S080pUeCezdlXUUH3bj6SdvTQ9yZpLquvCPVBqrPmf1gSw6bEmvMKbwdkyNV3IM\nnSCVhPUdsDCPzDiMZU2p1dM0AFjBYdjMpHeKJAc7gV4jl/n+XQyWMDZFp4+fRvEu\nR+Ryck8WTGsTsIrQgn9wgojtxKHuBrVVcQF8LNECgYB5Y6cXsmVB7pVf2fi+J6GV\nf2CkNAfoOS8iRFJjyBQ2p6Fyko87FsdsKHq+SJYi4b0cauVcDnVyskO1iMKoetkc\nggfASWOXiuhIw0SfFSammlVVQhU+9zuSPKz+u2DivKIaausUlitZ0QLEylO4pyKz\nHQe4UeA5GIUz+VmzTcKs6A==\n-----END PRIVATE KEY-----\n",
+    "client_email": "vitalchat@vitalchat-306902.iam.gserviceaccount.com",
+    "client_id": "107024441101443173871",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vitalchat%40vitalchat-306902.iam.gserviceaccount.com"
+  }

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>500</title>
+    <meta http-equiv="refresh" content="30" />
+</head>
+
+<body>
+    <h1>500</h1>
+    <h4>Oops, there seems to be a problem.</h4>
+    <p>The page you are looking for is temporarily not working.</p>
+    <% if (error.error){%>
+        <pre><%= error.message %></pre>
+        <pre><%= error.stack %></pre>
+        <%}%>
+</body>
+
+</html>

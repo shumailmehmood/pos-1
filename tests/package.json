@@ -1,0 +1,27 @@
+{
+    "name": "vitalchat",
+    "version": "1.0.0",
+    "dependencies": {
+        "bluebird": "^3.7.2",
+        "dotenv": "^16.3.1",
+        "got": "^13.0.0",
+        "moment": "^2.29.4",
+        "puppeteer": "^20.9.0"
+    },
+    "devDependencies": {
+        "chai": "^4.3.7",
+        "chance": "^1.1.11",
+        "gulp": "^4.0.2",
+        "gulp-concat": "^2.6.1",
+        "gulp-ignore": "^3.0.0",
+        "gulp-jshint": "^2.1.0",
+        "gulp-mocha": "^8.0.0",
+        "gulp-rename": "^2.0.0",
+        "gulp-sequence": "^1.0.0",
+        "gulp-uglify-es": "^3.0.0",
+        "gulp-uglifycss": "^1.1.0",
+        "hippie": "^0.6.1",
+        "jshint": "^2.13.6",
+        "jshint-stylish": "^2.2.1"
+    }
+}
